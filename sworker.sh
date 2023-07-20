@@ -160,8 +160,8 @@ function package(){
     rm $outpath -rf && mkdir -p $outpath 2>/dev/null
     mkdir $outpath/cmodel/
     mkdir $outpath/firmware/
-    mkdir $outpath/JSON/asic/ -p
-    mkdir $outpath/JSON/fpga/ -p
+    mkdir $outpath/JSON/independent/ -p
+    mkdir $outpath/JSON/independent_physical/ -p
 
     ## copy libs
     echo "1. copying libs..."
@@ -207,18 +207,23 @@ function package(){
 
     # copy model files
     echo "6. copying VIP model files..."
-    wget --quiet "https://coding-app1.verisilicon.com/resource/Transcoding/stream/JSON/asic_nbg/yolo_v2.nb" -P $outpath/JSON/asic/
-    wget --quiet "https://coding-app1.verisilicon.com/resource/Transcoding/stream/JSON/asic_nbg/mobilenet_v1.nb" -P $outpath/JSON/asic/
-    wget --quiet "https://coding-app1.verisilicon.com/resource/Transcoding/stream/JSON/asic_nbg/bodypix.nb" -P $outpath/JSON/asic/
-    wget --quiet "https://coding-app1.verisilicon.com/resource/Transcoding/stream/JSON/asic_nbg/resnet_50.nb" -P $outpath/JSON/asic/
-    wget --quiet "https://coding-app1.verisilicon.com/resource/Transcoding/stream/JSON/asic_nbg/cae_cc.nb" -P $outpath/JSON/asic/
-    wget --quiet "https://coding-app1.verisilicon.com/resource/Transcoding/stream/JSON/asic_nbg/cae_cxc.nb" -P $outpath/JSON/asic/
-    wget --quiet "https://coding-app1.verisilicon.com/resource/Transcoding/stream/JSON/fpga_nbg/yolo_v2.nb" -P $outpath/JSON/fpga
-    wget --quiet "https://coding-app1.verisilicon.com/resource/Transcoding/stream/JSON/fpga_nbg/mobilenet_v1.nb" -P $outpath/JSON/fpga
-    wget --quiet "https://coding-app1.verisilicon.com/resource/Transcoding/stream/JSON/fpga_nbg/bodypix.nb" -P $outpath/JSON/fpga
-    wget --quiet "https://coding-app1.verisilicon.com/resource/Transcoding/stream/JSON/fpga_nbg/resnet_50.nb" -P $outpath/JSON/fpga
-    wget --quiet "https://coding-app1.verisilicon.com/resource/Transcoding/stream/JSON/fpga_nbg/cae_cc.nb" -P $outpath/JSON/fpga
-    wget --quiet "https://coding-app1.verisilicon.com/resource/Transcoding/stream/JSON/fpga_nbg/cae_cxc.nb" -P $outpath/JSON/fpga
+    cp $root/ma35_vsi_libs/src/vpe/src/processor/vip/model/yolo/yolo_v2.json $outpath/JSON/independent
+    cp $root/ma35_vsi_libs/src/vpe/src/processor/vip/model/mobilenet/mobilenet_v1.json $outpath/JSON/independent
+    cp $root/ma35_vsi_libs/src/vpe/src/processor/vip/model/bodypix/bodypix.json $outpath/JSON/independent
+    cp $root/ma35_vsi_libs/src/vpe/src/processor/vip/model/resnet_50/resnet_50.json $outpath/JSON/independent
+    cp $root/ma35_vsi_libs/src/vpe/src/processor/vip/model/cae_cc/cae_cc.json $outpath/JSON/independent
+
+    cp $root/ma35_vsi_libs/src/vpe/src/processor/vip/model/yolo/yolo_v2_physical.json $outpath/JSON/independent_physical
+    cp $root/ma35_vsi_libs/src/vpe/src/processor/vip/model/mobilenet/mobilenet_v1_physical.json $outpath/JSON/independent_physical
+    cp $root/ma35_vsi_libs/src/vpe/src/processor/vip/model/bodypix/bodypix_physical.json $outpath/JSON/independent_physical
+    cp $root/ma35_vsi_libs/src/vpe/src/processor/vip/model/resnet_50/resnet_50_physical.json $outpath/JSON/independent_physical
+    cp $root/ma35_vsi_libs/src/vpe/src/processor/vip/model/cae_cc/cae_cc_physical.json $outpath/JSON/independent_physical
+
+    cp $root/ma35_vsi_libs/src/vpe/src/processor/vip/model/yolo/yolo_v2_ind_416x416.nb $outpath/JSON/independent/yolo_v2.nb
+    cp $root/ma35_vsi_libs/src/vpe/src/processor/vip/model/mobilenet/mobilenet_v1_ind_224x224.nb $outpath/JSON/independent/mobilenet_v1.nb
+    cp $root/ma35_vsi_libs/src/vpe/src/processor/vip/model/bodypix/bodypix_ind_640x480.nb $outpath/JSON/independent/bodypix.nb
+    cp $root/ma35_vsi_libs/src/vpe/src/processor/vip/model/resnet_50/resnet_50_ind_224x224.nb $outpath/JSON/independent/resnet_50.nb
+    cp $root/ma35_vsi_libs/src/vpe/src/processor/vip/model/cae_cc/cae_cc_ind_224x224.nb $outpath/JSON/independent/cae_cc.nb
 
     echo "7. removing ffmpeg rpath..."
     remove_rpath $outpath
