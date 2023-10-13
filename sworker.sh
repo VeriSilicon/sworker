@@ -78,10 +78,11 @@ function sync(){
     idx=1
     for repo in ${repos[@]}; do
         cd $repo
-        branch=$(git branch --show-current)
+        branch=$(git branch -a | grep "\->" | cut -d ">" -f 2 | cut -d'/' -f2-)
+        remote=$(git branch -a | grep "\->" | cut -d ">" -f 2 | cut -d'/' -f1)
         echo -e "\n$idx. updating $repo...$branch"
         git config pull.rebase false
-        git pull origin $branch
+        git pull $remote $branch
         idx=$((idx+1))
         cd ..
     done
@@ -97,16 +98,13 @@ function reset(){
         if [[ "$1" != "" ]]; then
             branch=$1
         else
-            branch=$(git branch --show-current)
+            branch=$(git branch -a | grep "\->" | cut -d ">" -f 2 | cut -d'/' -f2-)
         fi
+        remote=$(git branch -a | grep "\->" | cut -d ">" -f 2 | cut -d'/' -f1)
         echo -e "\n$idx. updating $repo...$branch"
         git merge --abort 2> /dev/null
-        git branch -D tmp 2> /dev/null
-        git checkout -b tmp
-        git branch -D $branch 2> /dev/null
-        git checkout -b $branch origin/$branch
+        git checkout -b $branch $remote/$branch
         git reset --hard
-        git branch -D tmp
         idx=$((idx+1))
         cd ..
     done
@@ -121,15 +119,16 @@ function merge(){
             continue
         fi
         cd $repo
-        branch=$(git branch --show-current)
+        branch=$(git branch -a | grep "\->" | cut -d ">" -f 2 | cut -d'/' -f2-)
+        remote=$(git branch -a | grep "\->" | cut -d ">" -f 2 | cut -d'/' -f1)
         echo "$idx. $repo..."
-        git checkout origin/$branch -f 2>/dev/null
-        git fetch origin > /dev/null
-        log=$(git merge origin/$remote_branch --no-ff)
+        git checkout $remote/$branch -f 2>/dev/null
+        git fetch $remote > /dev/null
+        log=$(git merge $remote/$remote_branch --no-ff)
         if (( $? != 0 )); then
             echo -e "error! merge conflict on $repo\n"
         elif [[ "$log" != "Already up to date." ]]; then
-            git push origin HEAD:refs/for/$branch
+            git push $remote HEAD:refs/for/$branch
             if (( $? != 0 )); then
                 echo -e "push $repo failed\n"
             else
@@ -148,29 +147,30 @@ function clone(){
     cd $root;
     idx=1
     sudo rm build -rf
-    for repo in ${gits[@]}; do
-        branch=$repo"_branch"
-        branch=`eval echo '$'"$branch"`
-        if [[ "$amd_gits_mirror" == "y" ]]; then
-            git="ssh://$gerrit_user@gerrit-spsd.verisilicon.com:29418/github/Xilinx-Projects/$repo"
-        else
-            git="git@github.com:$github_user/$repo.git"
-        fi
-        echo -e "\n$idx. clone $git...$branch"
-        rm $repo -rf
-        git clone "$git" -b $branch
-        if (( $? != 0 )); then
-            echo "git clone $git failed"
-            exit 1
-        fi
-        cd $repo
-        if [[ "$amd_gits_mirror" == "y" ]]; then
-            gitdir=$(git rev-parse --git-dir); scp -p -P 29418 $gerrit_user@gerrit-spsd.verisilicon.com:hooks/commit-msg ${gitdir}/hooks/
-        fi
-        cd -
-
-        idx=$((idx+1))
-    done
+    if [[ "$amd_gits_mirror" == "y" ]]; then
+        git="ssh://$gerrit_user@gerrit-spsd.verisilicon.com:29418/github/Xilinx-Projects/$repo"
+        repo init --no-clone-bundle -u ssh://${gerrit_user}@gerrit-spsd.verisilicon.com:29418/manifest -b spsd/master -m Transcoding/supernova_ma35_spsd_develop.xml
+        repo sync
+    else
+        git="git@github.com:$github_user/$repo.git"
+        for repo in ${gits[@]}; do
+            branch=$repo"_branch"
+            branch=`eval echo '$'"$branch"`
+            echo -e "\n$idx. clone $git...$branch"
+            rm $repo -rf
+            git clone "$git" -b $branch
+            if (( $? != 0 )); then
+                echo "git clone $git failed"
+                exit 1
+            fi
+            cd $repo
+            if [[ "$amd_gits_mirror" == "y" ]]; then
+                gitdir=$(git rev-parse --git-dir); scp -p -P 29418 $gerrit_user@gerrit-spsd.verisilicon.com:hooks/commit-msg ${gitdir}/hooks/
+            fi
+            cd -
+            idx=$((idx+1))
+        done
+    fi
     echo "clone_amd_gits done"
 }
 
