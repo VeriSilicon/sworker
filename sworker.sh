@@ -287,6 +287,16 @@ function package(){
     find  $root/ma35_vsi_libs/src/vpe/src/processor/vip/model/ -type f -name *.json -exec cp {} $outpath/JSON/independent/ \;
     mv $outpath/JSON/independent/*physical.json $outpath/JSON/independent_physical/
 
+    cp $root/ma35_vsi_libs/src/vpe/src/processor/vip/model/yolo/yolo_v2_ind_416x416.nb $outpath/JSON/independent/yolo_v2.nb
+    cp $root/ma35_vsi_libs/src/vpe/src/processor/vip/model/mobilenet/mobilenet_v1_ind_224x224.nb $outpath/JSON/independent/mobilenet_v1.nb
+    cp $root/ma35_vsi_libs/src/vpe/src/processor/vip/model/bodypix/bodypix_ind_640x480.nb $outpath/JSON/independent/bodypix.nb
+    cp $root/ma35_vsi_libs/src/vpe/src/processor/vip/model/resnet_50/resnet_50_ind_224x224.nb $outpath/JSON/independent/resnet_50.nb
+    cp $root/ma35_vsi_libs/src/vpe/src/processor/vip/model/cae_cc/cae_cc_ind_224x224.nb $outpath/JSON/independent/cae_cc.nb
+    cp $root/ma35_vsi_libs/src/vpe/src/processor/vip/model/roi/roi_face_ind_1280x720.nb $outpath/JSON/independent/roi_face_ind_1280x720.nb
+    cp $root/ma35_vsi_libs/src/vpe/src/processor/vip/model/roi/roi_face_ind_1920x1080.nb $outpath/JSON/independent/roi_face_ind_1920x1080.nb
+    cp $root/ma35_vsi_libs/src/vpe/src/processor/vip/model/roi/roi_text_ind_1280x720.nb $outpath/JSON/independent/roi_face_ind_1280x720.nb
+    cp $root/ma35_vsi_libs/src/vpe/src/processor/vip/model/roi/roi_text_ind_1920x1080.nb $outpath/JSON/independent/roi_face_ind_1920x1080.nb
+
     echo "7. removing ffmpeg rpath..."
     remove_rpath $outpath
 
