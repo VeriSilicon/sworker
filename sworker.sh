@@ -152,8 +152,8 @@ function clone(){
         repo init --no-clone-bundle -u ssh://${gerrit_user}@gerrit-spsd.verisilicon.com:29418/manifest -b spsd/master -m Transcoding/supernova_ma35_spsd_develop.xml
         repo sync
     else
-        git="git@github.com:$github_user/$repo.git"
         for repo in ${gits[@]}; do
+            git="git@github.com:$github_user/$repo.git"
             branch=$repo"_branch"
             branch=`eval echo '$'"$branch"`
             echo -e "\n$idx. clone $git...$branch"
