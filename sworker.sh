@@ -17,6 +17,7 @@ ma35_xma_branch="develop"
 ma35_apps_branch="develop"
 ma35_branch="$default_branch"
 amd_gits_mirror=y
+extra_update=y
 
 function create_folder(){
     folder=supernova_`date "+%m%d%H%M"`
@@ -233,7 +234,7 @@ function package(){
 
     ## copy libs
     echo "1. copying libs..."
-    cp $root/ma35_vsi_libs/src/vpe/prebuild/libs/x86_64_linux/* $outpath/ -rf
+    cp $build_path/_deps/vsi_libs-build/src/vpe/src/libvpi.so $outpath/ -rf
     cp $build_path/_deps/ffmpeg-build/ffmpeg $outpath/
     cp $build_path/_deps/ffmpeg-build/libavfilter/libavfilter.so $outpath/
     cp $build_path/_deps/ffmpeg-build/libswscale/libswscale.so $outpath/
@@ -242,15 +243,13 @@ function package(){
     cp $build_path/_deps/ffmpeg-build/libswresample/libswresample.so $outpath/
     cp $build_path/_deps/ffmpeg-build/libavcodec/libavcodec.so $outpath/
     cp $build_path/_deps/ffmpeg-build/libavutil/libavutil.so $outpath/
-    cp $build_path/_deps/vsi_libs-build/src/vpe/src/libvpi.so $outpath/
-    # cp $build_path/_deps/osal-build/libosal.so $outpath/
     # cp $build_path/_deps/sn_int_ext-build/lib/libsn_int.so $outpath/
-    # cp $build_path/_deps/ddbi-build/lib/jsf_mamgmt/libjsf_mamgmt.so $outpath/
-    # cp $build_path/_deps/ddbi-build/lib/jsf_mautil/libjsf_mautil.so $outpath/
-    # cp $build_path/_deps/ddbi-build/lib/jsf_xrm/libjsf_xrm.so $outpath/
-    # cp $build_path/_deps/ddbi-build/testapps/jmamgmt $outpath/
-    # cp $build_path/_deps/ddbi-build/testapps/jmautil $outpath/
-    # cp $build_path/_deps/ddbi-build/testapps/jxrm $outpath/
+    cp $build_path/_deps/ddbi-build/lib/jsf_mamgmt/libjsf_mamgmt.so $outpath/
+    cp $build_path/_deps/ddbi-build/lib/jsf_mautil/libjsf_mautil.so $outpath/
+    cp $build_path/_deps/ddbi-build/lib/jsf_xrm/libjsf_xrm.so $outpath/
+    cp $build_path/_deps/ddbi-build/testapps/jmamgmt $outpath/
+    cp $build_path/_deps/ddbi-build/testapps/jmautil $outpath/
+    cp $build_path/_deps/ddbi-build/testapps/jxrm $outpath/
     cp $build_path/_deps/apps-build/xrm_apps/xrm_interface/libxrm_interface.so $outpath/
     cp $build_path/_deps/tools-build/log_ama/liblog_ama.so $outpath/
     cp $root/ma35_shelf/xav1sdk/libxav1sdk-shelf.a $outpath/
@@ -266,8 +265,8 @@ function package(){
 
     ## copy cmodel related
     echo "3. copying cmodel files..."
-    cp $root/ma35_shelf/ma35_sn_int/*.so $outpath/cmodel/
-    cp $root/ma35_shelf/host_device_algo/*.so $outpath/
+    # cp $root/ma35_shelf/ma35_sn_int/*.so $outpath/cmodel/
+    # cp $root/ma35_shelf/host_device_algo/*.so $outpath/
 
     ## copy drivers
     echo "4. copying driver source code..."
@@ -301,12 +300,14 @@ function package(){
     remove_rpath $outpath
 
     echo "8. copying latest ffprobe and stest.sh"
-    git archive --remote=ssh://$gerrit_user@gerrit-spsd.verisilicon.com:29418/github/Xilinx-Projects/ma35_vsi_libs spsd/develop src/vpe/prebuild/libs/x86_64_linux/ffprobe | tar xO > $outpath/ffprobe
-    git archive --remote=ssh://$gerrit_user@gerrit-spsd.verisilicon.com:29418/github/Xilinx-Projects/ma35_vsi_libs spsd/develop src/vpe/prebuild/firmware/ctrl_prefetchable_VF_PF_BAR4_512_class_code_Gen4.bin | tar xO > $outpath/firmware/ctrl_prefetchable_VF_PF_BAR4_512_class_code_Gen4.bin
-    git archive --remote=ssh://$gerrit_user@gerrit-spsd.verisilicon.com:29418/github/Xilinx-Projects/ma35_vsi_libs spsd/develop src/vpe/tools/stest.sh | tar xO > $outpath/stest.sh
-    git archive --remote=ssh://$gerrit_user@gerrit-spsd.verisilicon.com:29418/github/Xilinx-Projects/ma35_vsi_libs spsd/develop src/vpe/tools/smoke_test.sh | tar xO > $outpath/smoke_test.sh
-    git archive --remote=ssh://$gerrit_user@gerrit-spsd.verisilicon.com:29418/github/Xilinx-Projects/ma35_vsi_libs spsd/develop src/vpe/build/install.sh | tar xO > $outpath/install.sh
-    chmod 777 $outpath/*.sh  $outpath/ffprobe
+    if [[ "$extra_update" == "y" ]]; then
+        git archive --remote=ssh://$gerrit_user@gerrit-spsd.verisilicon.com:29418/github/Xilinx-Projects/ma35_vsi_libs spsd/develop src/vpe/prebuild/libs/x86_64_linux/ffprobe | tar xO > $outpath/ffprobe
+        git archive --remote=ssh://$gerrit_user@gerrit-spsd.verisilicon.com:29418/github/Xilinx-Projects/ma35_vsi_libs spsd/develop src/vpe/prebuild/firmware/ctrl_prefetchable_VF_PF_BAR4_512_class_code_Gen4.bin | tar xO > $outpath/firmware/ctrl_prefetchable_VF_PF_BAR4_512_class_code_Gen4.bin
+        git archive --remote=ssh://$gerrit_user@gerrit-spsd.verisilicon.com:29418/github/Xilinx-Projects/ma35_vsi_libs spsd/develop src/vpe/tools/stest.sh | tar xO > $outpath/stest.sh
+        git archive --remote=ssh://$gerrit_user@gerrit-spsd.verisilicon.com:29418/github/Xilinx-Projects/ma35_vsi_libs spsd/develop src/vpe/tools/smoke_test.sh | tar xO > $outpath/smoke_test.sh
+        git archive --remote=ssh://$gerrit_user@gerrit-spsd.verisilicon.com:29418/github/Xilinx-Projects/ma35_vsi_libs spsd/develop src/vpe/build/install.sh | tar xO > $outpath/install.sh
+        chmod 777 $outpath/*.sh  $outpath/ffprobe
+    fi
 
     echo "9. packaging..."
     cd $outpath/../ 1>&/dev/null
