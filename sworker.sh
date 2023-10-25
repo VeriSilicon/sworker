@@ -185,7 +185,7 @@ function build(){
     cd build
     cmake $root/ma35 -G Ninja -DMA35_REPO_TAG=$remote_branch -DCMAKE_BUILD_TYPE=Debug -DMA35_FORCE_NO_PRIVATE_repos=true -DREPO_USE_LOCAL_shelf=true -DREPO_USE_LOCAL_vsi_libs=true -DREPO_USE_LOCAL_tools=true -DREPO_USE_LOCAL_linux_kernel=true -DREPO_USE_LOCAL_osal=true -DREPO_USE_LOCAL_ddbi=true -DREPO_USE_LOCAL_xma=true -DREPO_USE_LOCAL_apps=true -DREPO_USE_LOCAL_tools=true -DREPO_USE_LOCAL_ma35=true  -DREPO_USE_LOCAL_ffmpeg=true -DREPO_USE_LOCAL_zsp_firmware=true -DREPO_USE_LOCAL_shelf=true -DREPO_BUILD_TESTS_vsi_libs=true -DMA35_KERNEL_MODULE_VERSION=$( uname -r)
     ninja
-    ninja osal ffmpeg_vsi
+    ninja ffmpeg_vsi
     ninja kernel_module
     cd -
     make_firmware
@@ -253,7 +253,6 @@ function package(){
     cp $build_path/_deps/ddbi-build/testapps/jxrm $outpath/
     cp $build_path/_deps/apps-build/xrm_apps/xrm_interface/libxrm_interface.so $outpath/
     cp $build_path/_deps/tools-build/log_ama/liblog_ama.so $outpath/
-    cp $root/ma35_shelf/xav1sdk/libxav1sdk-shelf.a $outpath/
     cp $root/ma35_shelf/xma/libxma.so $outpath/
     cp $root/ma35_shelf/xrm/libxrm.so.1 $outpath/libxrm.so
     cp $root/ma35_shelf/roi_scale/libroi_scale.so $outpath
@@ -284,18 +283,10 @@ function package(){
 
     # copy model files
     echo "6. copying VIP model files..."
-    find  $root/ma35_vsi_libs/src/vpe/src/processor/vip/model/ -type f -name *.json -exec cp {} $outpath/JSON/independent/ \;
-    mv $outpath/JSON/independent/*physical.json $outpath/JSON/independent_physical/
-
-    cp $root/ma35_vsi_libs/src/vpe/src/processor/vip/model/yolo/yolo_v2_ind_416x416.nb $outpath/JSON/independent/yolo_v2.nb
-    cp $root/ma35_vsi_libs/src/vpe/src/processor/vip/model/mobilenet/mobilenet_v1_ind_224x224.nb $outpath/JSON/independent/mobilenet_v1.nb
-    cp $root/ma35_vsi_libs/src/vpe/src/processor/vip/model/bodypix/bodypix_ind_640x480.nb $outpath/JSON/independent/bodypix.nb
-    cp $root/ma35_vsi_libs/src/vpe/src/processor/vip/model/resnet_50/resnet_50_ind_224x224.nb $outpath/JSON/independent/resnet_50.nb
-    cp $root/ma35_vsi_libs/src/vpe/src/processor/vip/model/cae_cc/cae_cc_ind_224x224.nb $outpath/JSON/independent/cae_cc.nb
-    cp $root/ma35_vsi_libs/src/vpe/src/processor/vip/model/roi/roi_face_ind_1280x720.nb $outpath/JSON/independent/roi_face_ind_1280x720.nb
-    cp $root/ma35_vsi_libs/src/vpe/src/processor/vip/model/roi/roi_face_ind_1920x1080.nb $outpath/JSON/independent/roi_face_ind_1920x1080.nb
-    cp $root/ma35_vsi_libs/src/vpe/src/processor/vip/model/roi/roi_text_ind_1280x720.nb $outpath/JSON/independent/roi_face_ind_1280x720.nb
-    cp $root/ma35_vsi_libs/src/vpe/src/processor/vip/model/roi/roi_text_ind_1920x1080.nb $outpath/JSON/independent/roi_face_ind_1920x1080.nb
+    find $root/ma35_vsi_libs/src/vpe/src/processor/vip/model/ -type f -name *.json -exec cp {} $outpath/JSON/independent/ \;
+    mv $outpath/JSON/independent/*physical*.json $outpath/JSON/independent_physical/
+    find  $root/ma35_vsi_libs/src/vpe/src/processor/vip/model/ -type f -name *.nb -exec cp {} $outpath/JSON/independent/ \;
+    mv $outpath/JSON/independent/*physical*.nb $outpath/JSON/independent_physical/
 
     echo "7. removing ffmpeg rpath..."
     remove_rpath $outpath
