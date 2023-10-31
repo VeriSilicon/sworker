@@ -104,9 +104,7 @@ function reset(){
         remote=$(git branch -a | grep "\->" | cut -d ">" -f 2 | cut -d'/' -f1)
         echo -e "\n$idx. updating $repo...$branch"
         git merge --abort 2> /dev/null
-        git branch -D $branch 2> /dev/null
-        git checkout -b $branch $remote/$branch
-        git reset --hard
+        git reset $remote/$branch --hard
         idx=$((idx+1))
         cd ..
     done
@@ -190,9 +188,6 @@ function build(){
         exit 1;
     fi
     ninja kernel_module
-    if (( $? != 0 )); then
-        exit 1;
-    fi
     cd -
     make_firmware
     if (( $? != 0 )); then
