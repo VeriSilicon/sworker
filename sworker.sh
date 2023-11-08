@@ -111,7 +111,6 @@ function reset(){
     echo "fetch_amd_gits done"
 }
 
-set -x
 function merge(){
     gits=${repos[@]}
     idx=1
