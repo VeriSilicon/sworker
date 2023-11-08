@@ -1,6 +1,5 @@
 #!/bin/bash
 
-root=`pwd`
 remote_branch="develop"
 default_branch="spsd/develop"
 gerrit_user=cn1208
@@ -18,6 +17,7 @@ ma35_apps_branch="develop"
 ma35_branch="$default_branch"
 amd_gits_mirror=y
 extra_update=y
+try_gerrit=y
 
 function create_folder(){
     folder=supernova_`date "+%m%d%H%M"`
@@ -111,9 +111,11 @@ function reset(){
     echo "fetch_amd_gits done"
 }
 
+set -x
 function merge(){
     gits=${repos[@]}
     idx=1
+    cd $root
     for repo in ${gits[@]}; do
         if [[ "$repo" == "ma35_xma" ]] || [[ "$repo" == "ma35_app" ]]; then
             continue
@@ -146,9 +148,8 @@ function clone(){
     gits=${repos[@]}
     cd $root;
     idx=1
-    sudo rm build -rf
+    sudo rm ma35/build -rf
     if [[ "$amd_gits_mirror" == "y" ]]; then
-        git="ssh://$gerrit_user@gerrit-spsd.verisilicon.com:29418/github/Xilinx-Projects/$repo"
         repo init --no-clone-bundle -u ssh://${gerrit_user}@gerrit-spsd.verisilicon.com:29418/manifest -b spsd/master -m Transcoding/supernova_ma35_spsd_develop.xml
         repo sync
     else
@@ -161,13 +162,17 @@ function clone(){
             git clone "$git" -b $branch
             if (( $? != 0 )); then
                 echo "git clone $git failed"
-                exit 1
+                if [[ $try_gerrit == "y" ]]; then
+                    git="ssh://$gerrit_user@gerrit-spsd.verisilicon.com:29418/github/Xilinx-Projects/$repo"
+                    git clone "$git" -b $branch
+                    if (( $? != 0 )); then
+                        echo "git clone $git failed"
+                        exit 1
+                    fi
+                else
+                    exit 1
+                fi
             fi
-            cd $repo
-            if [[ "$amd_gits_mirror" == "y" ]]; then
-                gitdir=$(git rev-parse --git-dir); scp -p -P 29418 $gerrit_user@gerrit-spsd.verisilicon.com:hooks/commit-msg ${gitdir}/hooks/
-            fi
-            cd -
             idx=$((idx+1))
         done
     fi
@@ -176,18 +181,33 @@ function clone(){
 
 function build(){
     echo "Building full project with CMake..."
+    echo $root
     cd $root
-    if [ ! -d build ]; then
-        mkdir build
+    if [ ! -d ma35/build ]; then
+        mkdir ma35/build
     fi
-    cd build
-    cmake $root/ma35 -G Ninja -DMA35_REPO_TAG=$remote_branch -DCMAKE_BUILD_TYPE=Debug -DMA35_FORCE_NO_PRIVATE_repos=true -DREPO_USE_LOCAL_shelf=true -DREPO_USE_LOCAL_vsi_libs=true -DREPO_USE_LOCAL_tools=true -DREPO_USE_LOCAL_linux_kernel=true -DREPO_USE_LOCAL_osal=true -DREPO_USE_LOCAL_ddbi=true -DREPO_USE_LOCAL_xma=true -DREPO_USE_LOCAL_apps=true -DREPO_USE_LOCAL_tools=true -DREPO_USE_LOCAL_ma35=true  -DREPO_USE_LOCAL_ffmpeg=true -DREPO_USE_LOCAL_zsp_firmware=true -DREPO_USE_LOCAL_shelf=true -DREPO_BUILD_TESTS_vsi_libs=true -DMA35_KERNEL_MODULE_VERSION=$( uname -r)
+
+    # Use $(uname -r) as kernel version by default. If this version
+    # is not found in /usr/src, use the first kernel version in /usr/src.
+    # This happens when building with docker which uses same kernel as
+    # host but it has own kernel header sources.
+    local kernel_version=$(uname -r)
+    if ! ls -1 /usr/src | grep ${kernel_version} > /dev/null; then
+        kernel_version=$(ls -1 /usr/src/ | grep -e generic -e amd64 |
+            sed 's/linux-headers-//g' | head -1)
+    fi
+
+    cd ma35/build
+    cmake $root/ma35 -G Ninja -DMA35_REPO_TAG=$remote_branch -DCMAKE_BUILD_TYPE=Debug -DMA35_FORCE_NO_PRIVATE_repos=true -DREPO_USE_LOCAL_shelf=true -DREPO_USE_LOCAL_vsi_libs=true -DREPO_USE_LOCAL_tools=true -DREPO_USE_LOCAL_linux_kernel=true -DREPO_USE_LOCAL_osal=true -DREPO_USE_LOCAL_ddbi=true -DREPO_USE_LOCAL_xma=true -DREPO_USE_LOCAL_apps=true -DREPO_USE_LOCAL_ma35=true -DREPO_USE_LOCAL_ffmpeg=true -DREPO_USE_LOCAL_zsp_firmware=true -DMA35_KERNEL_MODULE_VERSION=${kernel_version}
     ninja
     ninja ffmpeg_vsi
     if (( $? != 0 )); then
         exit 1;
     fi
     ninja kernel_module
+    if (( $? != 0 )); then
+        exit 1;
+    fi
     cd -
     make_firmware
     if (( $? != 0 )); then
@@ -212,14 +232,14 @@ function make_firmware(){
 }
 
 function install(){
-    cd $(ls -d build/out/*/ | head -n 1)
+    cd $(ls -d $root/ma35/build/out/*/ | head -n 1)
     ./install.sh
 }
 
 function package(){
     build_path=$1
     if [[ "$build_path" == "" ]]; then
-        build_path=build
+        build_path=ma35/build
     elif [[ ! -d $build_path ]]; then
         echo "path $build_path is not available"
         exit 1
@@ -240,14 +260,16 @@ function package(){
     ## copy libs
     echo "1. copying libs..."
     cp $build_path/_deps/vsi_libs-build/src/vpe/src/libvpi.so $outpath/ -rf
+    cp $build_path/_deps/vsi_libs-build/sdk/VIP2D/hal/user/libGAL.so $outpath/
+    cp $build_path/_deps/vsi_libs-build/sdk/VIP2D/driver/khronos/libOpenVX/driver/src/libOpenVX.so $outpath/
     cp $build_path/_deps/ffmpeg-build/ffmpeg $outpath/
-    cp $build_path/_deps/ffmpeg-build/libavfilter/libavfilter.so $outpath/
-    cp $build_path/_deps/ffmpeg-build/libswscale/libswscale.so $outpath/
-    cp $build_path/_deps/ffmpeg-build/libavdevice/libavdevice.so $outpath/
-    cp $build_path/_deps/ffmpeg-build/libavformat/libavformat.so $outpath/
-    cp $build_path/_deps/ffmpeg-build/libswresample/libswresample.so $outpath/
-    cp $build_path/_deps/ffmpeg-build/libavcodec/libavcodec.so $outpath/
-    cp $build_path/_deps/ffmpeg-build/libavutil/libavutil.so $outpath/
+    cp $build_path/_deps/ffmpeg-build/libavfilter/libavfilter.so* $outpath/
+    cp $build_path/_deps/ffmpeg-build/libswscale/libswscale.so* $outpath/
+    cp $build_path/_deps/ffmpeg-build/libavdevice/libavdevice.so* $outpath/
+    cp $build_path/_deps/ffmpeg-build/libavformat/libavformat.so* $outpath/
+    cp $build_path/_deps/ffmpeg-build/libswresample/libswresample.so* $outpath/
+    cp $build_path/_deps/ffmpeg-build/libavcodec/libavcodec.so* $outpath/
+    cp $build_path/_deps/ffmpeg-build/libavutil/libavutil.so* $outpath/
     # cp $build_path/_deps/sn_int_ext-build/lib/libsn_int.so $outpath/
     cp $build_path/_deps/ddbi-build/lib/jsf_mamgmt/libjsf_mamgmt.so $outpath/
     cp $build_path/_deps/ddbi-build/lib/jsf_mautil/libjsf_mautil.so $outpath/
@@ -257,9 +279,9 @@ function package(){
     cp $build_path/_deps/ddbi-build/testapps/jxrm $outpath/
     cp $build_path/_deps/apps-build/xrm_apps/xrm_interface/libxrm_interface.so $outpath/
     cp $build_path/_deps/tools-build/log_ama/liblog_ama.so $outpath/
-    cp $root/ma35_shelf/xma/libxma.so $outpath/
-    cp $root/ma35_shelf/xrm/libxrm.so.1 $outpath/libxrm.so
+    cp $root/ma35_shelf/xma/libxma.so* $outpath/
     cp $root/ma35_shelf/roi_scale/libroi_scale.so $outpath
+    cp $root/ma35_vsi_libs/sdk/VIP2D/compiler/libVSC/x86_64/libVSC.so $outpath
 
     ## copy firmware
     echo "2. copying firmware..."
@@ -316,6 +338,7 @@ function help(){
     echo "$0 --amd_gits_mirror=:            y/n, whether enable the gits mirror.[$amd_gits_mirror] "
     echo "$0 --gerrit_user=:                set the gerrit account wich contains VSI gits.[$gerrit_user]"
     echo "$0 --github_user=:                set the github account wich contains gits.[$github_user]"
+    echo "$0 --extra_update=:               get some files update from gerrit.[$extra_update]"
     echo "$0 --default_branch=:             default branch name.[$default_branch]"
     echo "$0 --ma35_vsi_libs_branch=:       set the vsi_lib branch name.[$ma35_vsi_libs_branch]"
     echo "$0 --ma35_ffmpeg_branch=:         set the ffmpeg branch name.[$ma35_ffmpeg_branch]"
@@ -415,11 +438,21 @@ function create_pr(){
 
 function clean()
 {
-    rm build -rf
-    find . -name *.o | xargs rm
+    rm $root/ma35/build -rf
+    find $root -name *.o | xargs rm
 }
 
-root=`pwd`
+if [ -d ../ma35 ]; then
+    root=`pwd`/../
+else
+    root=`pwd`
+fi
+
+if [[ "$1" == "" ]]; then
+    build && package
+    exit 0
+fi
+
 for (( i=1; i <=$#; i++ )); do
     opt=${!i}
     optarg="${opt#*=}"
@@ -435,6 +468,9 @@ for (( i=1; i <=$#; i++ )); do
     --github_user=*)
         echo "github_user=$optarg"
         github_user=$optarg;;
+    --extra_update=*)
+        echo "extra_update=$optarg"
+        extra_update=$optarg;;
     --default_branch=*)
         default_branch=$optarg
         ma35_vsi_libs_branch="$default_branch"
