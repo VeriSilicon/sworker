@@ -193,8 +193,9 @@ function build(){
     local kernel_version=$(uname -r)
     if ! ls -1 /usr/src | grep ${kernel_version} > /dev/null; then
         kernel_version=$(ls -1 /usr/src/ | grep -e generic -e amd64 |
-            sed 's/linux-headers-//g' | head -1)
+        sed 's/linux-headers-//g' | head -1)
     fi
+    kernel_version=$(echo $kernel_version | sed 's/-generic//g')
 
     cd ma35/build
     cmake $root/ma35 -G Ninja -DMA35_REPO_TAG=$remote_branch -DCMAKE_BUILD_TYPE=Debug -DMA35_FORCE_NO_PRIVATE_repos=true -DREPO_USE_LOCAL_shelf=true -DREPO_USE_LOCAL_vsi_libs=true -DREPO_USE_LOCAL_tools=true -DREPO_USE_LOCAL_linux_kernel=true -DREPO_USE_LOCAL_osal=true -DREPO_USE_LOCAL_ddbi=true -DREPO_USE_LOCAL_xma=true -DREPO_USE_LOCAL_apps=true -DREPO_USE_LOCAL_ma35=true -DREPO_USE_LOCAL_ffmpeg=true -DREPO_USE_LOCAL_zsp_firmware=true -DMA35_KERNEL_MODULE_VERSION=${kernel_version}
