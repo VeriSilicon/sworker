@@ -1,7 +1,7 @@
 #!/bin/bash
 
 remote_branch="develop"
-default_branch="spsd/develop"
+default_branch="develop"
 gerrit_user=cn1208
 github_user=GYZHANG2019
 ma35_vsi_libs_branch="$default_branch"
